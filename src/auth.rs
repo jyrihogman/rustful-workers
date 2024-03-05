@@ -1,7 +1,7 @@
 use core::fmt;
 use std::error::Error;
 
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
 use worker::{Env, Request};
 
@@ -78,28 +78,24 @@ pub async fn authenticate(req: &Request, env: &Env) -> Result<Permissions, AuthE
         .map_err(|_| AuthError::MissingDecodingKey)?
         .to_string();
 
-    let validation = Validation::new(Algorithm::HS256);
+    let key = HS256Key::from_bytes(decoding_key.as_bytes());
 
-    let token_data = get_token(req).and_then(|token| {
-        decode::<Claims>(
-            &token,
-            &DecodingKey::from_secret(decoding_key.as_bytes()),
-            &validation,
-        )
-        .map_err(|_| AuthError::InvalidToken)
+    let claims = get_token(req).and_then(|token| {
+        key.verify_token::<Claims>(&token, None)
+            .map_err(|_| AuthError::InvalidToken)
     })?;
 
     let kv = env.kv("TOKENS").map_err(|_| AuthError::MissingTokens)?;
 
     let secret = kv
-        .get(&token_data.claims.client_id)
+        .get(&claims.custom.client_id)
         .json::<Secret>()
         .await
         .map_err(|_| AuthError::InvalidToken)?
         .ok_or(AuthError::InvalidToken)?;
 
     // Check if the client_secret from the token matches the secret from the KV storage
-    if secret.client_secret == token_data.claims.client_secret {
+    if secret.client_secret == claims.custom.client_secret {
         Ok(secret.permissions)
     } else {
         Err(AuthError::InvalidToken)
