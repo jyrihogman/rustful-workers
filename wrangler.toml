@@ -1,0 +1,20 @@
+name = "rustful-worker"
+main = "build/worker/shim.mjs"
+compatibility_date = "2023-06-28"
+
+kv_namespaces = [
+  { binding = "tokens", id = "90b3ddc03eb04a2e97d86d764fd7503b" }
+]
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[placement]
+mode = "smart"
+
+[vars]
+QSTASH_URL = "https://qstash.upstash.io/v2/publish"
+RUST_LOG = "info"
+
+# read more about configuring your Worker via wrangler.toml at:
+# https://developers.cloudflare.com/workers/cli-wrangler/configuration
