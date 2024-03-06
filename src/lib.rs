@@ -4,7 +4,7 @@ use worker::{
 };
 
 use api::qstash::{send_to_qstash, NotificationMessage};
-use auth::{authenticate, authorize};
+use auth::{authenticate, authenticate_qstash_request, authorize};
 use db::{get_all_notifications, get_user_subscribers};
 
 mod api;
@@ -27,21 +27,28 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     Router::new()
         .get_async("/notifications", |req, ctx| async move {
-            authenticate(&req, &ctx.env)
-                .await
-                .and_then(|perms| authorize("read", perms))?;
-
-            handle_get_notifications(req, ctx).await
+            match authenticate(&req, &ctx.env).await {
+                Ok(_) => handle_get_notifications(req, ctx).await,
+                Err(e) => {
+                    console_error!("Error authenticating: {}", e);
+                    Response::error(e, 403)
+                }
+            }
         })
         .post_async("/notifications", |req, ctx| async move {
-            authenticate(&req, &ctx.env)
-                .await
-                .and_then(|perms| authorize("create", perms))?;
-
-            handle_new_notification(req, ctx).await
+            match authenticate(&req, &ctx.env).await {
+                Ok(_) => handle_get_notifications(req, ctx).await,
+                Err(e) => {
+                    console_error!("Error authenticating: {}", e);
+                    Response::error(e, 403)
+                }
+            }
         })
         .post_async("/notifications/consume", |req, ctx| async move {
-            handle_consume(req, ctx).await
+            match authenticate_qstash_request(&req, &ctx.env) {
+                Ok(_) => handle_consume(req, ctx).await,
+                Err(e) => Response::error(e, 403),
+            }
         })
         .run(req, env)
         .await

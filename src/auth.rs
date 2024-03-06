@@ -3,7 +3,9 @@ use std::error::Error;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
-use worker::{Env, Request};
+use worker::{console_error, Env, Request};
+
+use crate::api::qstash::NotificationMessage;
 
 pub type Permissions = Vec<String>;
 
@@ -15,6 +17,13 @@ pub struct Claims {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct QStashClaims {
+    iss: String,
+    sub: String,
+    body: NotificationMessage,
+}
+
+#[derive(Serialize, Deserialize)]
 struct Secret {
     client_id: String,
     client_secret: String,
@@ -23,19 +32,21 @@ struct Secret {
 
 #[derive(Debug)]
 pub enum AuthError {
-    MissingAuthorization,
+    MissingAuthHeader,
     Unauthorized,
     InvalidToken,
     MissingDecodingKey,
     MissingTokens,
+    MissingQStashKey,
 }
 
 impl fmt::Display for AuthError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            AuthError::MissingAuthorization => f.write_str("Missing Authorization"),
+            AuthError::MissingAuthHeader => f.write_str("Missing Authorization Header"),
             AuthError::Unauthorized => f.write_str("Unauthorized"),
             AuthError::InvalidToken => f.write_str("Invalid Token"),
+            AuthError::MissingQStashKey => f.write_str("Missing QStash Signing key"),
             AuthError::MissingDecodingKey => f.write_str("Internal Server Error"),
             AuthError::MissingTokens => f.write_str("Internal Server Error"),
         }
@@ -60,11 +71,11 @@ fn get_token(req: &Request) -> Result<String, AuthError> {
     let auth_header = req
         .headers()
         .get("Authorization")
-        .map_err(|_| AuthError::MissingAuthorization)?
-        .ok_or(AuthError::MissingAuthorization)?;
+        .map_err(|_| AuthError::MissingAuthHeader)?
+        .ok_or(AuthError::MissingAuthHeader)?;
 
     if !auth_header.starts_with("Bearer ") {
-        return Err(AuthError::MissingAuthorization);
+        return Err(AuthError::InvalidToken);
     }
 
     let token = auth_header[7..].to_string();
@@ -100,6 +111,33 @@ pub async fn authenticate(req: &Request, env: &Env) -> Result<Permissions, AuthE
     } else {
         Err(AuthError::InvalidToken)
     }
+}
+
+pub fn authenticate_qstash_request(
+    req: &Request,
+    env: &Env,
+) -> Result<JWTClaims<QStashClaims>, AuthError> {
+    let upstash_signature_header = req
+        .headers()
+        .get("Upstash-Signature")
+        .map_err(|_| AuthError::MissingAuthHeader)?
+        .ok_or(AuthError::MissingAuthHeader)?;
+
+    let verify_token = |key_binding: String| {
+        HS256Key::from_bytes(key_binding.as_bytes())
+            .verify_token::<QStashClaims>(&upstash_signature_header, None)
+            .map_err(|e| {
+                console_error!("Verifying token failed, {}", e);
+                AuthError::InvalidToken
+            })
+    };
+
+    env.secret("QSTASH_CURRENT_SIGNING_KEY")
+        .map_err(|e| {
+            console_error!("QStash signing key missing, {}", e);
+            AuthError::MissingQStashKey
+        })
+        .and_then(|secret| verify_token(secret.to_string()))
 }
 
 pub fn authorize(required_permission: &str, permissions: Permissions) -> Result<(), AuthError> {
