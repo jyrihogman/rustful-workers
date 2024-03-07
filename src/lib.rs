@@ -27,7 +27,10 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     Router::new()
         .get_async("/notifications", |req, ctx| async move {
-            match authenticate(&req, &ctx.env).await {
+            match authenticate(&req, &ctx.env)
+                .await
+                .and_then(|perms| authorize("read", perms))
+            {
                 Ok(_) => handle_get_notifications(req, ctx).await,
                 Err(e) => {
                     console_error!("Error authenticating: {}", e);
@@ -37,7 +40,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         })
         .post_async("/notifications", |req, ctx| async move {
             match authenticate(&req, &ctx.env).await {
-                Ok(_) => handle_get_notifications(req, ctx).await,
+                Ok(_) => handle_new_notification(req, ctx).await,
                 Err(e) => {
                     console_error!("Error authenticating: {}", e);
                     Response::error(e, 403)

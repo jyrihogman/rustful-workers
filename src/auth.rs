@@ -3,17 +3,16 @@ use std::error::Error;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
-use worker::{console_error, Env, Request};
+use worker::{console_error, console_log, Env, Request};
 
 use crate::api::qstash::NotificationMessage;
 
 pub type Permissions = Vec<String>;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    exp: usize,
-    client_id: String,
-    client_secret: String,
+pub struct Claims<'a> {
+    client_id: &'a str,
+    client_secret: &'a str,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -24,7 +23,7 @@ pub struct QStashClaims {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Secret {
+pub struct Secret {
     client_id: String,
     client_secret: String,
     permissions: Permissions,
@@ -75,7 +74,7 @@ fn get_token(req: &Request) -> Result<String, AuthError> {
         .ok_or(AuthError::MissingAuthHeader)?;
 
     if !auth_header.starts_with("Bearer ") {
-        return Err(AuthError::InvalidToken);
+        return Err(AuthError::MissingTokens);
     }
 
     let token = auth_header[7..].to_string();
@@ -84,32 +83,42 @@ fn get_token(req: &Request) -> Result<String, AuthError> {
 }
 
 pub async fn authenticate(req: &Request, env: &Env) -> Result<Permissions, AuthError> {
+    let kv = env.kv("tokens").map_err(|_| AuthError::MissingTokens)?;
     let decoding_key = env
         .secret("DECODING_KEY")
         .map_err(|_| AuthError::MissingDecodingKey)?
         .to_string();
 
-    let key = HS256Key::from_bytes(decoding_key.as_bytes());
-
     let claims = get_token(req).and_then(|token| {
-        key.verify_token::<Claims>(&token, None)
-            .map_err(|_| AuthError::InvalidToken)
+        HS256Key::from_bytes(decoding_key.as_bytes())
+            .verify_token::<Secret>(&token, None)
+            .map_err(|e| {
+                console_error!("Verifying token failed: {}", e.to_string());
+                AuthError::InvalidToken
+            })
     })?;
 
-    let kv = env.kv("TOKENS").map_err(|_| AuthError::MissingTokens)?;
+    console_log!("{}", claims.custom.client_id);
+    console_log!("{}", claims.custom.client_secret);
 
-    let secret = kv
-        .get(&claims.custom.client_id)
-        .json::<Secret>()
-        .await
-        .map_err(|_| AuthError::InvalidToken)?
-        .ok_or(AuthError::InvalidToken)?;
+    let client_id = claims.custom.client_id;
 
-    // Check if the client_secret from the token matches the secret from the KV storage
-    if secret.client_secret == claims.custom.client_secret {
-        Ok(secret.permissions)
-    } else {
-        Err(AuthError::InvalidToken)
+    let secret = kv.get(&client_id).text().await.map_err(|e| {
+        console_error!("Failed to get secret for client {}: {}", client_id, e);
+        AuthError::Unauthorized
+    })?;
+
+    match secret {
+        Some(secret_value) => {
+            if secret_value != claims.custom.client_secret {
+                console_error!("Invalid secret for client {}", secret_value);
+                console_error!("Invalid secret for client {}", claims.custom.client_secret);
+
+                return Err(AuthError::Unauthorized);
+            }
+            Ok(claims.custom.permissions)
+        }
+        None => Err(AuthError::MissingQStashKey),
     }
 }
 
