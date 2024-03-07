@@ -3,6 +3,17 @@ main = "build/worker/shim.mjs"
 compatibility_date = "2023-06-28"
 
 kv_namespaces = [
+  { binding = "tokens_dev", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "90b3ddc03eb04a2e97d86d764fd7503b" },
+]
+
+[env.dev]
+workers_dev = true
+kv_namespaces = [
+   { binding = "tokens_dev", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "90b3ddc03eb04a2e97d86d764fd7503b" },
+]
+
+[env.production]
+kv_namespaces = [
   { binding = "tokens", id = "90b3ddc03eb04a2e97d86d764fd7503b" }
 ]
 
