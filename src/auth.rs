@@ -3,7 +3,7 @@ use std::error::Error;
 
 use jwt_simple::prelude::*;
 use serde::{Deserialize, Serialize};
-use worker::{console_error, console_log, Env, Request};
+use worker::{console_error, Env, Request};
 
 use crate::api::qstash::NotificationMessage;
 
@@ -97,9 +97,6 @@ pub async fn authenticate(req: &Request, env: &Env) -> Result<Permissions, AuthE
                 AuthError::InvalidToken
             })
     })?;
-
-    console_log!("{}", claims.custom.client_id);
-    console_log!("{}", claims.custom.client_secret);
 
     let client_id = claims.custom.client_id;
 
