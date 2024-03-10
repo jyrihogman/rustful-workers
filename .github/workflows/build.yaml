@@ -14,16 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build
-        run: cargo build
+        run: cargo build --verbose
 
       - name: Check formatting
-        run: cargo fmt --all --check
+        run: cargo fmt --verbose --all --check
 
       - name: Lint
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --verbose --all-targets --all-features -- -D warnings
 
-      - name: Build WASM Release package for CF Workers
-        run: cargo install -q worker-build && worker-build --release
+      - name: Build WASM Release package for Turso Edge Worker
+        run: cd turso-edge && cargo install -q worker-build && worker-build --release
+
+      - name: Build WASM Release package for Turso Edge cache Worker
+        run: cd turso-edge-cache && cargo install -q worker-build && worker-build --release
