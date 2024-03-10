@@ -1,14 +1,16 @@
 {
-  "name": "worker-rust",
+  "name": "rustful-workers-monorepo",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev --remote",
-    "dev:local": "wrangler dev",
-    "build": "wrangler build"
+    "deploy": "npm run deploy --workspaces",
+    "build": "npm run build --workspaces"
   },
   "devDependencies": {
     "wrangler": "^3.30.1"
-  }
+  },
+  "workspaces": [
+    "turso-kv-edge",
+    "kv-cache"
+  ]
 }

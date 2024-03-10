@@ -1,0 +1,25 @@
+[package]
+name = "kv-cache"
+version = "0.1.0"
+edition = "2021"
+categories = ["wasm"]
+license = "Apache-2.0/MIT"
+readme = "./README.md"
+
+
+# https://github.com/rustwasm/wasm-pack/issues/1247
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[dependencies]
+chrono = "0.4.35"
+serde = "1.0.197"
+serde_json = "1.0.114"
+uuid = { version = "1.7.0", features = ["serde"] }
+worker = "0.0.18"
+worker-kv = "0.6.0"
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1

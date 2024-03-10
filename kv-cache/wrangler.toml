@@ -1,4 +1,4 @@
-name = "rustful-worker"
+name = "kv-cache"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-06-28"
 
