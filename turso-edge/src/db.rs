@@ -38,8 +38,11 @@ pub async fn get_user_subscribers(user_id: Uuid, env: &Env) -> Result<ResultSet>
 pub async fn get_all_notifications(env: &Env) -> Result<ResultSet> {
     let client = create_client(env)?;
 
-    client.execute("SELECT * FROM notifications").await.map_err(|e| {
-        console_error!("Error fetching messages from db");
-        Error::from(e.to_string())
-    })
+    client
+        .execute("SELECT * FROM notifications")
+        .await
+        .map_err(|e| {
+            console_error!("Error fetching messages from db");
+            Error::from(e.to_string())
+        })
 }

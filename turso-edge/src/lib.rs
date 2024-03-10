@@ -33,7 +33,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             {
                 Ok(_) => handle_get_notifications(req, ctx).await,
                 Err(e) => {
-                    console_error!("Error authenticating: {}", e);
+                    console_error!("Error authenticating: {:?}", e);
                     Response::error(e, 403)
                 }
             }

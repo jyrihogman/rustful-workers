@@ -1,0 +1,11 @@
+{
+  "name": "rustful-workers-turso-kv-edge",
+  "version": "0.0.0",
+  "private": false,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --remote",
+    "dev:local": "wrangler dev",
+    "build": "wrangler build"
+  }
+}

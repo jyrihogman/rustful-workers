@@ -1,0 +1,21 @@
+[package]
+name = "turso-edge"
+version = "0.1.0"
+edition = "2021"
+
+# https://github.com/rustwasm/wasm-pack/issues/1247
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+jwt-simple = { workspace = true }
+libsql-client = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+url = { workspace = true }
+worker = { workspace = true }
+uuid = { workspace = true }

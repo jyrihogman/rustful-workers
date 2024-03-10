@@ -1,0 +1,32 @@
+name: "Build"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Build:
+    name: Build and Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Check formatting
+        run: cargo fmt --verbose --all --check
+
+      - name: Lint
+        run: cargo clippy --verbose --all-targets --all-features -- -D warnings
+
+      - name: Build WASM Release package for Turso Edge Worker
+        run: cd turso-edge && cargo install -q worker-build && worker-build --release
+
+      - name: Build WASM Release package for Turso Edge cache Worker
+        run: cd turso-edge-cache && cargo install -q worker-build && worker-build --release
