@@ -1,23 +1,31 @@
-use std::future::Future;
-
 use serde::{de::DeserializeOwned, Serialize};
-use worker::kv::{KvError, KvStore};
+use worker::{
+    console_error, console_log,
+    kv::{KvError, KvStore},
+};
 
-pub fn get_cache<T: DeserializeOwned + 'static>(
-    key: &str,
-) -> Box<dyn Future<Output = Result<Option<T>, KvError>>> {
-    let kv = Result::expect(KvStore::create("KvCache"), "KvCache store not found");
-
-    Box::new(kv.get(key).cache_ttl(300).json::<T>())
+pub async fn get_cache<T>(key: &str) -> Option<T>
+where
+    T: DeserializeOwned,
+{
+    match KvStore::create("KvCache") {
+        Ok(kv) => {
+            match kv.get(key).cache_ttl(300).json::<T>().await {
+                Ok(result) => result,
+                Err(_) => {
+                    console_log!("CacheMiss");
+                    None
+                } // Error occurred, return None
+            }
+        }
+        Err(_) => {
+            console_error!("Failed to create KvStore");
+            None
+        }
+    }
 }
 
-pub fn set_cache<T: Serialize>(
-    key: &str,
-    value: T,
-) -> Box<dyn Future<Output = Result<(), KvError>>> {
-    let kv = Result::expect(KvStore::create("KvCache"), "KvCache store not found");
-
-    let opts_builder = Result::expect(kv.put(key, value), "KV Insert failed");
-
-    Box::new(async { opts_builder.execute().await })
+pub async fn set_cache<T: Serialize>(key: &str, value: T) -> Result<(), KvError> {
+    let kv = KvStore::create("KvCache")?;
+    kv.put(key, value)?.execute().await
 }
