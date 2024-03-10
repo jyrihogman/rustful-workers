@@ -1,4 +1,3 @@
-use util::get_current_date_in_utc;
 use worker::{
     console_error, console_log, event, Context, Date, Env, Request, Response, Result, RouteContext,
     Router,
@@ -11,9 +10,6 @@ use db::{get_all_notifications, get_user_subscribers};
 mod api;
 mod auth;
 mod db;
-mod error;
-mod kv_storage;
-mod util;
 
 fn log_request(req: &Request) {
     console_log!(
@@ -99,9 +95,6 @@ async fn handle_new_notification(mut req: Request, ctx: RouteContext<()>) -> Res
             return Response::error("Invalid Request Body", 404);
         }
     };
-
-    let current_date = get_current_date_in_utc();
-    let kv = ctx.kv("messages")?.get(&format!("messages-{current_date}"));
 
     match send_to_qstash(request_body, ctx).await {
         Ok(body) => Response::from_json(&body),
