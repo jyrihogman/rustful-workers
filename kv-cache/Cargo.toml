@@ -12,14 +12,7 @@ readme = "./README.md"
 wasm-opt = false
 
 [dependencies]
-chrono = "0.4.35"
-serde = "1.0.197"
-serde_json = "1.0.114"
-uuid = { version = "1.7.0", features = ["serde"] }
-worker = "0.0.18"
+serde = { workspace = true }
+serde_json = { workspace = true }
+worker = { workspace = true }
 worker-kv = "0.6.0"
-
-[profile.release]
-lto = true
-strip = true
-codegen-units = 1
