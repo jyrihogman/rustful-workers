@@ -1,9 +1,0 @@
-{
-  "name": "rustful-workers-kv-cache",
-  "version": "0.0.0",
-  "private": false,
-  "scripts": {
-    "build:prod": "cargo build --release",
-    "build": "cargo build"
-  }
-}

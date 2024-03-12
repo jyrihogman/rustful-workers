@@ -1,11 +1,15 @@
+use std::future::Future;
+
 use worker::{
     console_error, console_log, event, Context, Date, Env, Request, Response, Result, RouteContext,
     Router,
 };
 
 use api::qstash::{send_to_qstash, NotificationMessage};
-use auth::{authenticate, authenticate_qstash_request, authorize};
+use auth::authenticate_qstash_request;
 use db::{get_all_notifications, get_user_subscribers};
+
+use crate::auth::authenticate;
 
 mod api;
 mod auth;
@@ -27,25 +31,10 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     Router::new()
         .get_async("/notifications", |req, ctx| async move {
-            match authenticate(&req, &ctx.env)
-                .await
-                .and_then(|perms| authorize("read", perms))
-            {
-                Ok(_) => handle_get_notifications(req, ctx).await,
-                Err(e) => {
-                    console_error!("Error authenticating: {:?}", e);
-                    Response::error(e, 403)
-                }
-            }
+            handle_route_with_authentication(req, ctx, handle_get_notifications).await
         })
         .post_async("/notifications", |req, ctx| async move {
-            match authenticate(&req, &ctx.env).await {
-                Ok(_) => handle_new_notification(req, ctx).await,
-                Err(e) => {
-                    console_error!("Error authenticating: {}", e);
-                    Response::error(e, 403)
-                }
-            }
+            handle_route_with_authentication(req, ctx, handle_new_notification).await
         })
         .post_async("/notifications/consume", |req, ctx| async move {
             match authenticate_qstash_request(&req, &ctx.env) {
@@ -100,4 +89,21 @@ async fn handle_new_notification(mut req: Request, ctx: RouteContext<()>) -> Res
         Ok(body) => Response::from_json(&body),
         Err(e) => Response::error(e.to_string(), 500),
     }
+}
+
+async fn handle_route_with_authentication<F, Fut>(
+    req: Request,
+    ctx: RouteContext<()>,
+    handler: F,
+) -> Result<Response>
+where
+    F: Fn(Request, RouteContext<()>) -> Fut,
+    Fut: Future<Output = Result<Response>>,
+{
+    match authenticate(&req, &ctx.env).await {
+        Ok(_) => (),
+        Err(e) => return Response::error(e, 401),
+    };
+
+    handler(req, ctx).await
 }

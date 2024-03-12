@@ -10,6 +10,7 @@ readme = "./README.md"
 
 [workspace.dependencies]
 jwt-simple = "0.12"
+jwt-compact = "0.8.0"
 libsql-client = { version = "0.33.4", default-features = false, features = [
   "workers_backend",
 ] }
