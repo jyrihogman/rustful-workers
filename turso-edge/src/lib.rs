@@ -6,13 +6,11 @@ use worker::{
 };
 
 use api::qstash::{send_to_qstash, NotificationMessage};
-use auth::authenticate_qstash_request;
-use db::{get_all_notifications, get_user_subscribers};
+use db::get_all_notifications;
 
-use crate::auth::authenticate;
+use auth::authenticate;
 
 mod api;
-mod auth;
 mod db;
 
 fn log_request(req: &Request) {
@@ -36,12 +34,6 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .post_async("/notifications", |req, ctx| async move {
             handle_route_with_authentication(req, ctx, handle_new_notification).await
         })
-        .post_async("/notifications/consume", |req, ctx| async move {
-            match authenticate_qstash_request(&req, &ctx.env) {
-                Ok(_) => handle_consume(req, ctx).await,
-                Err(e) => Response::error(e, 403),
-            }
-        })
         .run(req, env)
         .await
 }
@@ -54,26 +46,6 @@ async fn handle_get_notifications(_req: Request, ctx: RouteContext<()>) -> Resul
             Response::error(e.to_string(), 500)
         }
     }
-}
-
-async fn handle_consume(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let body = match req.json::<NotificationMessage>().await {
-        Ok(body) => body,
-        Err(e) => {
-            console_error!("Error serializing request body: {}", e);
-            return Response::error("Invalid Request Body", 400);
-        }
-    };
-
-    let subscribers = match get_user_subscribers(body.user_id, &ctx.env).await {
-        Ok(subscribers) => subscribers,
-        Err(e) => {
-            console_error!("Error searching for subscribers: {}", e);
-            return Response::error("Failed to get subscribers from database", 500);
-        }
-    };
-
-    Response::from_json(&subscribers.rows)
 }
 
 async fn handle_new_notification(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {

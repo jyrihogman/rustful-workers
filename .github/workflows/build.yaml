@@ -17,13 +17,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        run: cargo build --verbose
+        run: cargo build
 
       - name: Check formatting
-        run: cargo fmt --verbose --all --check
+        run: cargo fmt --all --check
 
       - name: Lint
-        run: cargo clippy --verbose --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build WASM Release package for Turso Edge Worker
         run: cd turso-edge && cargo install -q worker-build && worker-build --release
