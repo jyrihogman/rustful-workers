@@ -1,3 +1,4 @@
+use auth::authenticate;
 use url::Url;
 use worker::{
     console_error, console_log, event, Context, Date, Env, Error, Request, Response, Result,
@@ -12,10 +13,6 @@ use libsql_client::{
 use serde::{Deserialize, Serialize};
 
 use kv_cache::{get_cache, set_cache};
-
-use auth::{authenticate, authorize};
-
-mod auth;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
@@ -40,10 +37,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     Router::new()
         .get_async("/notifications", |req, ctx| async move {
-            match authenticate(&req, &ctx.env)
-                .await
-                .and_then(|perms| authorize("read", perms))
-            {
+            match authenticate(&req, &ctx.env).await {
                 Ok(_) => handle_get_notifications(req, ctx).await,
                 Err(e) => {
                     console_error!("Error authenticating: {:?}", e);
