@@ -6,13 +6,14 @@ use worker::{
 };
 
 use libsql_client::{
+    de,
     http::{Client, InnerClient},
     workers::HttpClient,
     Config, ResultSet,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use kv_cache::{get_cache, set_cache};
+use kv_cache::get_cache;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
@@ -51,7 +52,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
 async fn handle_get_notifications(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     match get_all_notifications(&ctx.env).await {
-        Ok(result_set) => Response::from_json(&result_set.rows),
+        Ok(messages) => Response::from_json(&messages),
         Err(e) => {
             console_error!("Error fetching messages from database: {}", e);
             Response::error(e.to_string(), 500)
@@ -75,27 +76,28 @@ fn create_client(env: &Env) -> std::result::Result<Client, Error> {
         .map_err(|e| Error::from(e.to_string()))
 }
 
-pub async fn get_all_notifications(env: &Env) -> Result<ResultSet> {
+fn result_set_to_json<T: DeserializeOwned>(result_set: ResultSet) -> Result<Vec<T>> {
+    result_set
+        .rows
+        .iter()
+        .map(de::from_row)
+        .collect::<std::result::Result<Vec<T>, _>>()
+        .map_err(|e| Error::from(e.to_string()))
+}
+
+pub async fn get_all_notifications(env: &Env) -> Result<Vec<Message>> {
     let client = create_client(env)?;
 
-    if let Some(cached_result) = get_cache::<ResultSet>("messages_cache").await {
+    if let Some(cached_result) = get_cache::<Vec<Message>>("messages_cache").await {
         return Ok(cached_result);
     }
 
-    let results = client
-        .execute("SELECT * FROM notifications")
+    client
+        .execute("SELECT * FROM messages")
         .await
+        .map(result_set_to_json::<Message>)
         .map_err(|e| {
             console_error!("Error fetching messages from db");
             Error::from(e.to_string())
-        })?;
-
-    match set_cache("messages_cache", &results).await {
-        Ok(_) => {}
-        Err(e) => {
-            console_error!("Error caching messages from db: {}", e);
-        }
-    }
-
-    Ok(results)
+        })?
 }
