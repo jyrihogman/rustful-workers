@@ -1,16 +1,16 @@
-name = "turso-kv-edge"
+name = "turso-edge"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-06-28"
 
 kv_namespaces = [
-  { binding = "tokens_dev", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
+  { binding = "tokens", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
   { binding = "messages", preview_id = "635c6c5fcb224bd0bf6fc756a737dc09", id = "635c6c5fcb224bd0bf6fc756a737dc09" },
 ]
 
 [env.dev]
 workers_dev = true
 kv_namespaces = [
-  { binding = "tokens_dev", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
+  { binding = "tokens", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
   { binding = "messages", preview_id = "635c6c5fcb224bd0bf6fc756a737dc09", id = "635c6c5fcb224bd0bf6fc756a737" },
 ]
 

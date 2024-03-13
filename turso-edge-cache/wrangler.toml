@@ -1,10 +1,11 @@
-name = "turso-kv-edge"
+name = "turso-edge-cache"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-06-28"
 
 kv_namespaces = [
   { binding = "tokens", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
   { binding = "messages", preview_id = "635c6c5fcb224bd0bf6fc756a737dc09", id = "635c6c5fcb224bd0bf6fc756a737dc09" },
+  { binding = "KvCache", id = "330800c0fdd944208a2df96b87399e77", preview_id = "330800c0fdd944208a2df96b87399e77" },
 ]
 
 [env.dev]
@@ -12,12 +13,16 @@ workers_dev = true
 kv_namespaces = [
   { binding = "tokens", preview_id = "ffa8657ffbbc4e33941e985a0296a969", id = "ffa8657ffbbc4e33941e985a0296a969" },
   { binding = "messages", preview_id = "635c6c5fcb224bd0bf6fc756a737dc09", id = "635c6c5fcb224bd0bf6fc756a737" },
+  { binding = "KvCache", id = "330800c0fdd944208a2df96b87399e77" },
+
 ]
 
 [env.production]
 kv_namespaces = [
   { binding = "tokens", id = "90b3ddc03eb04a2e97d86d764fd7503b" },
   { binding = "messages", id = "c121a7224c2847c887990ca4ca45e425" },
+  { binding = "KvCache", id = "330800c0fdd944208a2df96b87399e77" },
+
 ]
 
 [build]
