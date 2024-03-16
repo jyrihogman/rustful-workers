@@ -1,5 +1,5 @@
 [workspace]
-members = ["turso-edge-cache", "turso-edge", "kv-cache", "auth"]
+members = ["turso-edge-cache", "turso-edge", "kv-cache", "auth", "turso-aws-lambda"]
 resolver = "2"
 
 [workspace.package]
