@@ -4,13 +4,12 @@ use serde::Serialize;
 use std::env;
 
 #[derive(Debug, serde::Deserialize, Serialize)]
-    #[allow(dead_code)]
-    pub struct User {
-        id: String,
-        id_hash: String,
-        display_name: String,
-    }
-
+#[allow(dead_code)]
+pub struct User {
+    id: String,
+    id_hash: String,
+    display_name: String,
+}
 
 pub async fn get_messages() -> Result<Vec<User>, libsql::Error> {
     let url = env::var("LIBSQL_URL").expect("DB_URL env variable not set");
