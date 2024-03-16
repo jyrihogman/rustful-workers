@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use libsql::{de, Builder};
 use serde::Serialize;
 
@@ -14,7 +13,6 @@ use std::env;
 
 
 pub async fn get_messages() -> Result<Vec<User>, libsql::Error> {
-    dotenv().ok();
     let url = env::var("LIBSQL_URL").expect("DB_URL env variable not set");
     let auth_token = env::var("LIBSQL_AUTH_TOKEN").expect("DB_TOKEN env variable not set");
 
