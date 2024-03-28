@@ -93,7 +93,7 @@ pub async fn get_all_notifications(env: &Env) -> Result<Vec<Message>> {
     }
 
     client
-        .execute("SELECT * FROM messages")
+        .execute("SELECT * FROM message")
         .await
         .map(result_set_to_json::<Message>)
         .map_err(|e| {

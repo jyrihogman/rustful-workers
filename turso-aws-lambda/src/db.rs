@@ -15,8 +15,12 @@ pub async fn get_messages() -> Result<Vec<User>, libsql::Error> {
     let url = env::var("LIBSQL_URL").expect("DB_URL env variable not set");
     let auth_token = env::var("LIBSQL_AUTH_TOKEN").expect("DB_TOKEN env variable not set");
 
-    let db = Builder::new_remote(url, auth_token).build().await.unwrap();
+    let db = Builder::new_remote_replica("local.db", url, auth_token)
+        .build()
+        .await?;
+
     let mut rows = db.connect()?.query("SELECT * FROM users", ()).await?;
+
     let mut users = Vec::new();
     while let Some(row) = rows.next().await.unwrap() {
         let user = de::from_row::<User>(&row).unwrap();
