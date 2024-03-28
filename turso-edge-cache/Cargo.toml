@@ -16,6 +16,6 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
-worker = { workspace = true }
+worker = "0.0.18"
 kv-cache = { path = "../kv-cache" }
 auth = { path = "../auth" }

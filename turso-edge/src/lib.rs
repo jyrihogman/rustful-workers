@@ -29,7 +29,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     Router::new()
         .get_async("/notifications", |req, ctx| async move {
-            handle_route_with_authentication(req, ctx, handle_get_notifications).await
+            handle_get_notifications(req, ctx).await
         })
         .post_async("/notifications", |req, ctx| async move {
             handle_route_with_authentication(req, ctx, handle_new_notification).await
@@ -40,7 +40,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
 async fn handle_get_notifications(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     match get_all_notifications(&ctx.env).await {
-        Ok(result_set) => Response::from_json(&result_set.rows),
+        Ok(messages) => Response::from_json(&messages),
         Err(e) => {
             console_error!("Error fetching messages from database: {}", e);
             Response::error(e.to_string(), 500)

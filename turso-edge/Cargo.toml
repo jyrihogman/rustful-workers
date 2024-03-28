@@ -16,6 +16,6 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
-worker = { workspace = true }
+worker = "0.0.18"
 uuid = { workspace = true }
 auth = { path = "../auth" }
